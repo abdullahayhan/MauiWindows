@@ -1,0 +1,39 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="25" Style="background-color:rgb(59,59,59)">
+        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Large" />
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
+            <MudIcon Icon="@Icons.Material.Filled.Home" Class="mr-2" Size="Size.Medium" />
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudText Typo="Typo.h6" Class="ml-2">MALİ MÜŞAVİR PORTAL</MudText>
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+            <MudText Typo="Typo.subtitle2" Class="ml-2">PORTAL</MudText>
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.MdAndUp">
+            <MudIconButton Icon="@Icons.Material.Outlined.Menu" Class="ml-2" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        </MudHidden>
+        <MudSpacer />
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="25" ClipMode="DrawerClipMode.Always">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+            <MudToolBar DisableGutters="true">
+                <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" OnClick="@((e) => DrawerToggle())" Class="ml-3" />
+            </MudToolBar>
+        </MudHidden>
+        <MudContainer MaxWidth="MaxWidth.False" Class="mt-1">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>

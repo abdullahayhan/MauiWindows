@@ -1,0 +1,28 @@
+﻿<UserCard />
+
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Class="my-1" Icon="@Icons.Material.Filled.Home">Anasayfa</MudNavLink>
+    <MudNavLink Href="/saleList" Icon="@Icons.Material.Outlined.PointOfSale">Satış Listesi</MudNavLink>
+    <MudNavLink Href="/convertXmlToExcel" Icon="@Icons.Material.Sharp.LocalConvenienceStore">Fatura Alış Takip</MudNavLink>
+</MudNavMenu>
+
+<MudSpacer />
+<MudButton Variant="Variant.Filled" Class="ma-4" StartIcon="@Icons.Material.Filled.Logout" OnClick="LogOut" Size="Size.Small" IconColor="Color.Error" Style="text-transform: none">Çıkış Yap</MudButton>
+
+
+@code {
+    protected async void LogOut()
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("HeaderIcon", Icons.Material.Outlined.Logout);
+        parameters.Add("ConfirmationMessage", "Çıkış yapmak istediğinize emin misiniz?");
+        parameters.Add("HeaderConfirmationMessage", "Çıkış Yap");
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true };
+        var dialog = _dialogService.Show<Shared.ConfirmationDialog>("Çıkış Yap", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            Application.Current.Quit();
+        }
+    }
+}

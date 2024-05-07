@@ -1,0 +1,230 @@
+﻿@using MauiApp2.Services.SaleService;
+@using MauiApp2.Data;
+@inject ISaleRepository _saleRepo;
+@inject NavigationManager _navigation;
+
+<EditForm Model="@_sale" OnValidSubmit="SaveSaleAsync">
+    <DataAnnotationsValidator />
+    <MudDialog>
+        <TitleContent>
+            @{
+                <MudText Typo="Typo.h6">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-3 mb-n1" />
+                    Satış İşlemleri
+                </MudText>
+            }
+        </TitleContent>
+        <DialogContent>
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.SiraNo"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Sıra No" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.FaturaTarihi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Fatura Tarihi" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.FaturaNo"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Fatura Numarası" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.FaturaTarihi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Fatura Tarihi" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.AdiSoyadi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Adı Soyadı" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.VergiNo"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Vergi No" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.Matrah"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Matrah" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.FaturaTarihi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Fatura Tarihi" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV20_Matrah"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV20 Matrah" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV20"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV20" />
+                </MudItem>
+                 <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV18_Matrah"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV18 Matrah" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV18"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV18" />
+                </MudItem>
+                 <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV10_Matrah"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV10 Matrah" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV10"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV10" />
+                </MudItem>
+
+                  <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV8_Matrah"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV8 Matrah" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV8"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV8" />
+                </MudItem>
+
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV1_Matrah"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV1 Matrah" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV1"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV1" />
+                </MudItem>
+
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDV0_Matrah"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDV0 Matrah" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.GenelIskonto"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Genel Iskonto" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.GenelToplam"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Genel Toplam" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.ParaBirimi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Para Birimi" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.DovizKuru"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Doviz Kuru" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.KDVliKargoTutari"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="KDVli Kargo Tutari" />
+
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.SatisKanali"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Satış Kanalı" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.FaturaTipi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Fatura Tipi" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.FaturaDurumu"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Fatura Durumu" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.MagazaAdi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Magaza Adi" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.OdemeYontemi"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Odeme Yontemi" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.EFatura_UUID"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="EFatura UUID" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField Required @bind-Value="_sale.SiparisNo"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Siparis No" />
+
+                </MudItem>
+
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_sale.HesaplananTevkifat"
+                                  Margin="Margin.Dense" Variant="Variant.Text" Label="Hesaplanan Tevkifat" />
+
+                </MudItem>
+            </MudGrid>
+        </DialogContent>
+        <DialogActions>
+            <MudButton DisableElevation Variant="Variant.Filled" Class="mr-auto" OnClick="Cancel">Vazgeç</MudButton>
+            @{
+                <MudButton DisableElevation Variant="Variant.Filled"
+                       ButtonType="ButtonType.Submit" Color="Color.Success">Kaydet</MudButton>
+            }
+        </DialogActions>
+    </MudDialog>
+</EditForm>
+
+
+@code {
+    [Parameter]
+    public string UUID { get; set; }
+
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = default!;
+    private Sale _sale { get; set; } = new();
+
+    protected async override void OnInitialized()
+    {
+        base.OnInitialized();
+        _sale.EFatura_UUID = UUID;
+        if (!string.IsNullOrEmpty(_sale.EFatura_UUID))
+        {
+            var response = await _saleRepo.GetSaleAsync(_sale.EFatura_UUID);
+            if (response is not null)
+            {
+                _sale = response;
+            }
+            this.StateHasChanged();
+        }
+        else
+        {
+            var lastSiraNo = await _saleRepo.GetLastSiraNo();
+            lastSiraNo++;
+            _sale.SiraNo = lastSiraNo.ToString();
+        }
+    }
+
+    private async Task SaveSaleAsync()
+    {
+        var response = await _saleRepo.AddUpdateSaleAsync(_sale);
+        if (response)
+        {
+            _snackBar.Add("İşlem Başarılı", Severity.Success);
+            MudDialog.Close();
+        }
+        else
+        {
+            _snackBar.Add("Bir hata oluştu", Severity.Error);
+        }
+    }
+
+    public void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

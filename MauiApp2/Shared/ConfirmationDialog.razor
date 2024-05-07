@@ -1,0 +1,35 @@
+﻿<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @if (HeaderIcon is not null)
+            {
+                <MudIcon Icon="@HeaderIcon" Size="Size.Large" Class="mr-3 mb-n1" />
+            }
+            @HeaderConfirmationMessage
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText>@ConfirmationMessage</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Vazgeç</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="Submit">Onayla</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string ConfirmationMessage { get; set; }
+
+    [Parameter]
+    public string HeaderConfirmationMessage { get; set; }
+
+    [Parameter] public string? HeaderIcon { get; set; }
+
+    void Submit()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    void Cancel() => MudDialog.Cancel();
+}

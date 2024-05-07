@@ -1,0 +1,17 @@
+﻿@using System.Net.Http
+@using MauiApp2.Services.SaleService;
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using MauiApp2
+@using MauiApp2.Shared
+@using MudBlazor
+@inject IDialogService _dialogService
+
+
+@using MauiApp2.Data;
+@inject ISaleRepository _saleRepo;
+@inject NavigationManager _navigation;
+@inject ISnackbar _snackBar;

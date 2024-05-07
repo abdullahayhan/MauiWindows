@@ -1,0 +1,279 @@
+﻿@page "/convertXmlToExcel"
+@using System.Xml.Serialization;
+@using System.Xml.Linq;
+@using CommunityToolkit.Maui.Storage;
+@using OfficeOpenXml;
+@using OfficeOpenXml.Style;
+
+
+<Header OnClose="Cancel" Title="Fatura Alış Takip" Description="XML-EXCEL Dönüştürücü" />
+
+
+<MudStack Style="width: 100%">
+    <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                   AppendMultipleFiles
+                   OnFilesChanged="OnInputFileChanged"
+                   Hidden="@false"
+                   InputClass="absolute mud-width-full mud-height-full overflow-hidden z-20"
+                   InputStyle="opacity:0"
+                   @ondragenter="@SetDragClass"
+                   @ondragleave="@ClearDragClass"
+                   @ondragend="@ClearDragClass">
+        <ButtonTemplate>
+            <MudPaper Height="300px"
+                      Outlined="true"
+                      Class="@_dragClass">
+                <MudText Typo="Typo.h6">
+                    Dosya yüklemek için tıklayınız...
+                </MudText>
+                @foreach (var file in _fileNames)
+                {
+                    <MudChip Color="Color.Dark" Text="@file" />
+                }
+            </MudPaper>
+            <MudToolBar DisableGutters="true"
+                        Class="relative d-flex justify-end gap-4 z-30">
+                <MudButton HtmlTag="label"
+                           Color="Color.Primary"
+                           for="@context"
+                           Variant="Variant.Filled">
+                    Dosya Seç
+                </MudButton>
+
+                <MudButton OnClick="@Upload"
+                           Color="Color.Primary"
+                           Disabled="@((!_fileNames.Any()) || _processing)"
+                           Variant="Variant.Filled">
+                    @if (_processing)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Aktarılıyor</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Excel'e Aktar</MudText>
+                    }
+                </MudButton>
+                <MudButton OnClick="@Clear"
+                           Color="Color.Error"
+                           Disabled="@(!_fileNames.Any())"
+                           Variant="Variant.Filled">
+                    Temizle
+                </MudButton>
+            </MudToolBar>
+        </ButtonTemplate>
+    </MudFileUpload>
+</MudStack>
+
+@code {
+    #nullable enable
+    private const string DefaultDragClass = "relative rounded-lg border-2 border-dashed pa-4 mt-4 mud-width-full mud-height-full z-10";
+    private string _dragClass = DefaultDragClass;
+    private readonly List<string> _fileNames = new();
+    private bool _processing = false;
+
+    private async Task Clear()
+    {
+        _fileNames.Clear();
+        ClearDragClass();
+        this.StateHasChanged();
+    }
+
+    private async Task OnInputFileChanged(InputFileChangeEventArgs e)
+    {
+        ClearDragClass();
+        var files = e.GetMultipleFiles();
+        foreach (var file in files)
+        {
+            var memoryStream = new MemoryStream();
+            await file.OpenReadStream().CopyToAsync(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            string tempFilePath = Path.Combine(Path.GetTempPath(), file.Name);
+            using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
+            {
+                memoryStream.CopyTo(fileStream);
+            }
+            _fileNames.Add(tempFilePath);
+        }
+        this.StateHasChanged();
+
+    }
+
+    private async void Upload()
+    {
+        if (_fileNames.Count == 0)
+        {
+            _snackBar.Add("Lütfen bir XML dosyası seçin.", Severity.Error);
+            return;
+        }
+
+        _snackBar.Add($"Aktarım işlemi başlatıldı...", Severity.Info);
+        _processing = true;
+        this.StateHasChanged();
+
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage excel = new ExcelPackage();
+        var worksheet = excel.Workbook.Worksheets.Add("Sheet1");
+        int currentRow = 1;
+
+        List<string> columnNames = new List<string> {
+                    "Fatura No",
+                    "Fatura Açıklaması",
+                    "Tür"};
+
+        for (int i = 0; i < columnNames.Count; i++)
+        {
+            worksheet.Cells[currentRow, i + 1].Value = columnNames[i];
+            worksheet.Cells[currentRow, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            worksheet.Cells[currentRow, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.DarkBlue);
+            worksheet.Cells[currentRow, i + 1].Style.Font.Color.SetColor(System.Drawing.Color.White);
+        }
+
+        currentRow++;
+
+        int totalPdfCount = _fileNames.Count;
+        int currentPdfCount = 0;
+
+
+        foreach (string fileName in _fileNames)
+        {
+            ProcessXMLFile(fileName, worksheet, ref currentRow);
+            currentPdfCount++;
+        }
+
+        using (MemoryStream memoryStream = new MemoryStream())
+        {
+            excel.SaveAs(memoryStream);
+
+            var fileSaverResult = await FileSaver.Default.SaveAsync("Fatura_Alis_Takip.xlsx", memoryStream, CancellationToken.None);
+
+
+            if (fileSaverResult != null)
+            {
+                _snackBar.Add($"Excel dosyası başarılı bir şekilde kaydedildi.", Severity.Success);
+            }
+            else
+            {
+                _snackBar.Add($"Excel dosyası kaydedilirken bir hata oluştu.", Severity.Success);
+            }
+        }
+
+        _processing = false;
+        this.StateHasChanged();
+    }
+
+    private static string GetValueFromMappingTable(string input, Dictionary<string, string> mappingTable)
+    {
+        string output = "";
+        // Input doğrudan bir anahtar ise
+        if (mappingTable.ContainsKey(input))
+        {
+            output = mappingTable[input];
+        }
+        else
+        {
+            foreach (var key in mappingTable.Keys)
+            {
+                if (input.Contains(key))
+                {
+                    output = mappingTable[key];
+                    break;
+                }
+            }
+            if (output == "")
+            {
+                output = "BELİRLENEMEDİ";
+            }
+        }
+        return output;
+    }
+
+    private void ProcessXMLFile(string fileName, ExcelWorksheet worksheet, ref int currentRow)
+    {
+        Dictionary<string, string> mappingTable = new Dictionary<string, string>
+            {
+                ["Uluslararası Hizmet Bedeli"] = "PAZARLAMA",
+                ["Kargo Fatura"] = "KARGO",
+                ["Kargo Bedeli"] = "KARGO",
+                ["MP KARGO DESTEK YANSITMA"] = "KARGO",
+                ["Platform Hizmet Bedeli"] = "PAZARLAMA",
+                ["Yanlış Ürün Faturası"] = "PAZARLAMA",
+                ["Termin Gecikme Bedeli"] = "PAZARLAMA",
+                ["AutoFT Termin Gecikme Bedeli"] = "PAZARLAMA",
+                ["AutoFT Hizmet Bedeli"] = "PAZARLAMA",
+                ["AutoFT Tedarik Edememe Bedeli"] = "PAZARLAMA",
+                ["MP Teslimat İşlem Bedeli"] = "PAZARLAMA",
+                ["Pazarlama destek katılım"] = "PAZARLAMA",
+                ["MP Müş.Memn.Yansıtma"] = "PAZARLAMA",
+                ["Eksik Ürün Faturası"] = "PAZARLAMA",
+                ["Namaz"] = "İADE",
+                ["NAMAZ"] = "İADE",
+                ["namaz"] = "İADE",
+                ["Fark"] = "İADE",
+                ["İade"] = "İADE",
+                ["Kusurlu Ürün Faturası"] = "PAZARLAMA",
+                ["Tedarik Edememe"] = "PAZARLAMA",
+                ["Reklam Bedeli"] = "PAZARLAMA",
+                ["Komisyon Fark Faturası (ciro)"] = "PAZARLAMA",
+                ["İhracat Merkezi - Birim Hizmet Bedeli"] = "PAZARLAMA",
+                ["KOMISYON BEDELI"] = "KOMISYON",
+                ["Komisyon Faturası"] = "KOMISYON",
+                ["Erken Ödeme Kesinti Faturası"] = "FINANSMAN",
+            };
+
+
+        XDocument doc = XDocument.Load(fileName);
+
+        XNamespace cbc = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+        XNamespace cac = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+
+
+        var invoiceElements = doc.Elements();
+        string faturaNo = "";
+        string faturaAciklamasi = "";
+        string tur = "";
+
+        foreach (XElement idElement in invoiceElements.Descendants(cbc + "ID"))
+        {
+            faturaNo = idElement.Value;
+            break;
+        }
+
+        foreach (XElement invoiceLineElement in invoiceElements.Descendants(cac + "InvoiceLine"))
+        {
+            var IdValue = invoiceLineElement.Descendants(cbc + "ID").FirstOrDefault().Value;
+            if (IdValue == "1")
+            {
+                XElement itemElement = invoiceLineElement.Descendants(cac + "Item").FirstOrDefault();
+                if (itemElement != null)
+                {
+                    XElement itemNameElement = itemElement.Descendants(cbc + "Name").FirstOrDefault();
+                    if (itemNameElement != null)
+                    {
+                        faturaAciklamasi = itemNameElement.Value;
+                        tur = GetValueFromMappingTable(itemNameElement.Value, mappingTable);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Excel tablosuna değerleri yaz
+        worksheet.Cells[currentRow, 1].Value = faturaNo;
+        worksheet.Cells[currentRow, 2].Value = faturaAciklamasi;
+        worksheet.Cells[currentRow, 3].Value = tur;
+        currentRow++;
+    }
+
+    private void SetDragClass()
+        => _dragClass = $"{DefaultDragClass} mud-border-primary";
+
+    private void ClearDragClass()
+        => _dragClass = DefaultDragClass;
+
+    private void Cancel()
+    {
+        _navigation.NavigateTo("/");
+    }
+}

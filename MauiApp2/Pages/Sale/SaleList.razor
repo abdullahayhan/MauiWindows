@@ -1,0 +1,558 @@
+﻿@page "/saleList"
+
+@using CommunityToolkit.Maui.Storage;
+@using MauiApp2.Pages.Sale.Dialogs;
+@using MauiApp2.Services.SaleService;
+@using MauiApp2.Data;
+@using OfficeOpenXml;
+@using System.Text;
+@inject ISaleRepository _saleRepo;
+@inject NavigationManager _navigation;
+@inject IJSRuntime JSRuntime
+
+<Header OnClose="Cancel" Title="Satışlar" Description="Satışları Yönet" />
+
+@if (saleList == null)
+{
+    <MudProgressCircular Class="ml-3" Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudPaper Elevation="5" Class="pa-5 mb-5">
+        <MudGrid Class="align-end" Justify="Justify.FlexStart" Spacing="3">
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Color="Color.Primary"><b>Filtreler</b></MudText>
+            </MudItem>
+            <MudItem xs="4">
+                <MudSelect @bind-Value="_saleViewModel.SatisKanali" Label="Satış Kanalı" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@("-")">Tümü</MudSelectItem>
+                    @foreach (var item in satisKanaliList)
+                    {
+                        <MudSelectItem Value="@item">@item</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="4">
+                <MudSelect @bind-Value="_saleViewModel.ParaBirimi" Label="Para Birimi" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@("-")">Tümü</MudSelectItem>
+                    @foreach (var item in paraBirimiList)
+                    {
+                        <MudSelectItem Value="@item">@item</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="4">
+                <MudSpacer />
+            </MudItem>
+            <MudItem xs="4">
+                <MudSelect @bind-Value="_saleViewModel.FaturaTipi" Label="Fatura Tipi" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@("-")">Tümü</MudSelectItem>
+                    @foreach (var item in faturaTipiList)
+                    {
+                        <MudSelectItem Value="@item">@item</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="4">
+                <MudButton Variant="Variant.Filled"
+                       Style="text-transform: none;"
+                       OnClick="@(async () => await SorgulaAsync())"
+                       Size="Size.Medium">
+                    @if (_processing)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Yükleniyor</MudText>
+                    }
+                    else
+                    {
+                        <MudIcon Color="Color.Secondary" Icon="@Icons.Material.Filled.Refresh" />
+                        <MudText>Sorgula</MudText>
+                    }
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+
+    <MudTable Breakpoint="Breakpoint.LgAndUp" Virtualize="true" FixedHeader="true" Elevation="25" Items="saleList" Class="mt-2" Dense="true" @bind-role="_sale">
+        <ToolBarContent>
+            <div class="d-flex justify-content-center align-items-center">
+                <MudButton OnClick="(() => AddNewSaleDialog())" Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Add" Class="mr-2">
+                    Yeni Kayıt
+                </MudButton>
+
+                <MudButton OnClick="(() => DeleteAllTable())" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" Class="mr-2">
+                    TÜM VERİLERİ SİL
+                </MudButton>
+
+                <MudFileUpload T="IBrowserFile" Accept=".xlsx" FilesChanged="UploadFiles" Class="mr-2 mb-2">
+                    <ButtonTemplate>
+                        <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload" for="@context">
+                            TOPLU AKTARIM
+                        </MudButton>
+                    </ButtonTemplate>
+                </MudFileUpload>
+
+                <MudButton OnClick="ExportToExcel" Class="mb-1" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.SaveAlt" Color="Color.Primary">
+                    Excel'e Aktar
+                </MudButton>
+            </div>
+
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.SiraNo)">Sira No</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.FaturaTarihi)">Fatura Tarihi</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.FaturaNo)">Fatura No</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.AdiSoyadi)">Adi Soyadi</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.VergiNo)">Vergi No</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.Matrah)">Matrah</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV20_Matrah)">KDV20 Matrah</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV20)">KDV20</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV18_Matrah)">KDV18 Matrah</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV18)">KDV18</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV10_Matrah)">KDV10 Matrah</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV10)">KDV10</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV8_Matrah)">KDV8 Matrah</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV8)">KDV8</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV1_Matrah)">KDV1 Matrah</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV1)">KDV1</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDV0_Matrah)">KDV0 Matrah</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.GenelIskonto)">Genel Iskonto</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.GenelToplam)">Genel Toplam</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.ParaBirimi)">Para Birimi</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.DovizKuru)">Doviz Kuru</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.KDVliKargoTutari)">KDVli Kargo Tutari</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.SatisKanali)">Satis Kanali</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.FaturaTipi)">Fatura Tipi</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.FaturaDurumu)">Fatura Durum</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.MagazaAdi)">Magaza Adi</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.OdemeYontemi)">Odeme Yontemi</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.EFatura_UUID)">EFatura UUID</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.SiparisNo)">Siparis No</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Sale, object>(x => x.HesaplananTevkifat)">Hesaplanan Tevkifat</MudTableSortLabel></MudTh>
+            <MudTh Style="text-align:right">İşlemler</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+
+            <MudTd DataLabel="Sira No">
+                <MudHighlighter Text="@context.SiraNo" />
+            </MudTd>
+
+            <MudTd DataLabel="Fatura Tarihi">
+                <MudHighlighter Text="@context.FaturaTarihi" />
+            </MudTd>
+
+            <MudTd DataLabel="Fatura No">
+                <MudHighlighter Text="@context.FaturaNo" />
+            </MudTd>
+
+            <MudTd DataLabel="AdiSoyadi">
+                <MudHighlighter Text="@context.AdiSoyadi" />
+            </MudTd>
+
+
+            <MudTd DataLabel="VergiNo">
+                <MudHighlighter Text="@context.VergiNo" />
+            </MudTd>
+
+            <MudTd DataLabel="Matrah">
+                <MudHighlighter Text="@context.Matrah" />
+            </MudTd>
+
+
+            <MudTd DataLabel="KDV20 Matrah">
+                <MudHighlighter Text="@context.KDV20_Matrah" />
+            </MudTd>
+
+
+            <MudTd DataLabel="KDV20">
+                <MudHighlighter Text="@context.KDV20" />
+            </MudTd>
+
+
+            <MudTd DataLabel="KDV18 Matrah">
+                <MudHighlighter Text="@context.KDV18_Matrah" />
+            </MudTd>
+
+
+            <MudTd DataLabel="KDV18">
+                <MudHighlighter Text="@context.KDV18" />
+            </MudTd>
+
+
+            <MudTd DataLabel="KDV10 Matrah">
+                <MudHighlighter Text="@context.KDV10_Matrah" />
+            </MudTd>
+
+            <MudTd DataLabel="KDV10">
+                <MudHighlighter Text="@context.KDV10" />
+            </MudTd>
+
+            <MudTd DataLabel="KDV8 Matrah">
+                <MudHighlighter Text="@context.KDV8_Matrah" />
+            </MudTd>
+
+            <MudTd DataLabel="KDV8">
+                <MudHighlighter Text="@context.KDV8" />
+            </MudTd>
+
+            <MudTd DataLabel="KDV1 Matrah">
+                <MudHighlighter Text="@context.KDV1_Matrah" />
+            </MudTd>
+
+            <MudTd DataLabel="KDV1">
+                <MudHighlighter Text="@context.KDV1" />
+            </MudTd>
+
+            <MudTd DataLabel="KDV0 Matrah">
+                <MudHighlighter Text="@context.KDV0_Matrah" />
+            </MudTd>
+
+            <MudTd DataLabel="Genel İskonto(%)">
+                <MudHighlighter Text="@context.GenelIskonto" />
+            </MudTd>
+
+            <MudTd DataLabel="Genel Toplam">
+                <MudHighlighter Text="@context.GenelToplam" />
+            </MudTd>
+
+
+            <MudTd DataLabel="ParaBirimi">
+                <MudHighlighter Text="@context.ParaBirimi" />
+            </MudTd>
+
+
+            <MudTd DataLabel="DovizKuru">
+                <MudHighlighter Text="@context.DovizKuru" />
+            </MudTd>
+
+
+            <MudTd DataLabel="KDVli Kargo Tutari">
+                <MudHighlighter Text="@context.KDVliKargoTutari" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Satis Kanali">
+                <MudHighlighter Text="@context.SatisKanali" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Fatura Tipi">
+                <MudHighlighter Text="@context.FaturaTipi" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Fatura Durumu">
+                <MudHighlighter Text="@context.FaturaDurumu" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Magaza Adi">
+                <MudHighlighter Text="@context.MagazaAdi" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Odeme Yontemi">
+                <MudHighlighter Text="@context.OdemeYontemi" />
+            </MudTd>
+
+
+            <MudTd DataLabel="EFatura UUID">
+                <MudHighlighter Text="@context.EFatura_UUID" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Siparis No">
+                <MudHighlighter Text="@context.SiparisNo" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Hesaplanan Tevkifat">
+                <MudHighlighter Text="@context.HesaplananTevkifat" />
+            </MudTd>
+
+
+            <MudTd DataLabel="Actions" Style="text-align: right">
+                <MudMenu DisableElevation="true" Dense="true" Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Color="Color.Secondary" TransformOrigin="Origin.BottomCenter" AnchorOrigin="Origin.BottomCenter">
+                    <MudMenuItem @onclick="@(() => UpdateSale(@context))">Güncelle</MudMenuItem>
+                    <MudMenuItem @onclick="@(() => Delete(@context))">Sil</MudMenuItem>
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+}
+
+
+@code {
+    private IEnumerable<Sale> saleList;
+    private Sale _sale = new();
+    private SaleViewModel _saleViewModel = new();
+    private List<string> satisKanaliList;
+    private List<string> paraBirimiList;
+    private List<string> faturaTipiList;
+    private bool _processing = false;
+    private MemoryStream fileStream;
+
+    private async Task ExportToExcel()
+    {
+        if (saleList != null && saleList.Any())
+        {
+            _snackBar.Add($"Aktarım işlemi başlatıldı...", Severity.Info);
+            try
+            {
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                ExcelPackage package = new ExcelPackage();
+                var worksheet = package.Workbook.Worksheets.Add("Satış Listesi");
+
+                worksheet.Cells[1, 1].Value = "Sıra No";
+                worksheet.Cells[1, 2].Value = "Fatura Tarihi";
+                worksheet.Cells[1, 3].Value = "Adı Soyadı";
+                worksheet.Cells[1, 4].Value = "Vergi No";
+                worksheet.Cells[1, 5].Value = "Matrah";
+                worksheet.Cells[1, 6].Value = "KDV20 Matrah";
+                worksheet.Cells[1, 7].Value = "KDV20";
+                worksheet.Cells[1, 8].Value = "KDV18 Matrah";
+                worksheet.Cells[1, 9].Value = "KDV18";
+                worksheet.Cells[1, 10].Value = "KDV10 Matrah";
+                worksheet.Cells[1, 11].Value = "KDV10";
+                worksheet.Cells[1, 12].Value = "KDV8 Matrah";
+                worksheet.Cells[1, 13].Value = "KDV8";
+                worksheet.Cells[1, 14].Value = "KDV1 Matrah";
+                worksheet.Cells[1, 15].Value = "KDV1";
+                worksheet.Cells[1, 16].Value = "KDV0 Matrah";
+                worksheet.Cells[1, 17].Value = "Genel Iskonto";
+                worksheet.Cells[1, 18].Value = "Genel Toplam";
+                worksheet.Cells[1, 19].Value = "Para Birimi";
+                worksheet.Cells[1, 20].Value = "Doviz Kuru";
+                worksheet.Cells[1, 21].Value = "KDVli Kargo Tutari";
+                worksheet.Cells[1, 22].Value = "Satis Kanali";
+                worksheet.Cells[1, 23].Value = "Fatura Tipi";
+                worksheet.Cells[1, 24].Value = "Fatura Durum";
+                worksheet.Cells[1, 25].Value = "Magaza Adi";
+                worksheet.Cells[1, 26].Value = "Odeme Yontemi";
+                worksheet.Cells[1, 27].Value = "EFatura UUID";
+                worksheet.Cells[1, 28].Value = "Siparis No";
+                worksheet.Cells[1, 29].Value = "Hesaplanan Tevkifat";
+
+                int row = 2;
+                foreach (var sale in saleList)
+                {
+                    worksheet.Cells[row, 1].Value = sale.SiraNo;
+                    worksheet.Cells[row, 2].Value = sale.FaturaTarihi;
+                    worksheet.Cells[row, 4].Value = sale.AdiSoyadi;
+                    worksheet.Cells[row, 5].Value = sale.VergiNo;
+                    worksheet.Cells[row, 6].Value = sale.Matrah;
+                    worksheet.Cells[row, 7].Value = sale.KDV20_Matrah;
+                    worksheet.Cells[row, 8].Value = sale.KDV20;
+                    worksheet.Cells[row, 9].Value = sale.KDV18_Matrah;
+                    worksheet.Cells[row, 10].Value = sale.KDV18;
+                    worksheet.Cells[row, 11].Value = sale.KDV10_Matrah;
+                    worksheet.Cells[row, 12].Value = sale.KDV8_Matrah;
+                    worksheet.Cells[row, 13].Value = sale.KDV8;
+                    worksheet.Cells[row, 14].Value = sale.KDV1_Matrah;
+                    worksheet.Cells[row, 15].Value = sale.KDV1;
+                    worksheet.Cells[row, 16].Value = sale.KDV0_Matrah;
+                    worksheet.Cells[row, 17].Value = sale.GenelIskonto;
+                    worksheet.Cells[row, 18].Value = sale.GenelToplam;
+                    worksheet.Cells[row, 19].Value = sale.ParaBirimi;
+                    worksheet.Cells[row, 20].Value = sale.DovizKuru;
+                    worksheet.Cells[row, 21].Value = sale.KDVliKargoTutari;
+                    worksheet.Cells[row, 22].Value = sale.SatisKanali;
+                    worksheet.Cells[row, 23].Value = sale.FaturaTipi;
+                    worksheet.Cells[row, 24].Value = sale.FaturaDurumu;
+                    worksheet.Cells[row, 25].Value = sale.MagazaAdi;
+                    worksheet.Cells[row, 26].Value = sale.OdemeYontemi;
+                    worksheet.Cells[row, 27].Value = sale.EFatura_UUID;
+                    worksheet.Cells[row, 28].Value = sale.SiparisNo;
+                    worksheet.Cells[row, 29].Value = sale.HesaplananTevkifat;
+                    row++;
+                }
+
+
+                var excelData = await GetExcelPackageAsByteArrayAsync(package);
+                var fileSaverResult = await FileSaver.Default.SaveAsync("Satis_Listesi.xlsx", new MemoryStream(excelData), CancellationToken.None);
+
+                _snackBar.Add("Excel dosyası başarıyla kaydedildi.", Severity.Success);
+            }
+            catch (Exception)
+            {
+                _snackBar.Add("Excel çıktısı oluşturulurken bir hata oluştu.", Severity.Error);
+            }
+        }
+        else
+        {
+            _snackBar.Add("Excel çıktısı almak için liste boş olmamalıdır.", Severity.Error);
+        }
+    }
+
+    private async Task<byte[]> GetExcelPackageAsByteArrayAsync(ExcelPackage package)
+    {
+        using (var stream = new MemoryStream())
+        {
+            await package.SaveAsAsync(stream);
+            return stream.ToArray();
+        }
+    }
+
+
+    private async void UploadFiles(IBrowserFile file)
+    {
+        _snackBar.Add($"Aktarım işlemi başlatıldı...", Severity.Info);
+        fileStream = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: int.MaxValue).CopyToAsync(fileStream);
+        fileStream.Seek(0, SeekOrigin.Begin);
+        await SubmitFile();
+    }
+
+    private async Task SubmitFile()
+    {
+        if (fileStream != null)
+        {
+            var response = await _saleRepo.ImportSalesFromExcelAsync(fileStream);
+
+            if (response)
+            {
+                _snackBar.Add("İşlem Başarılı.", Severity.Success);
+                await OnInitializedAsync();
+                fileStream.Dispose();
+                this.StateHasChanged();
+            }
+            else
+            {
+                _snackBar.Add("Bir hata oluştu.", Severity.Error);
+            }
+        }
+        else
+        {
+            _snackBar.Add("Dosya yüklenmedi.", Severity.Error);
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        saleList = await _saleRepo.GetAllSalesAsync(_saleViewModel);
+        satisKanaliList = saleList.Select(
+            s => s.SatisKanali)
+            .Distinct()
+            .ToList();
+
+        paraBirimiList = saleList.Select(
+            s => s.ParaBirimi)
+            .Distinct()
+            .ToList();
+
+        faturaTipiList = saleList.Select(
+            s => s.FaturaTipi)
+            .Distinct()
+            .ToList();
+    }
+
+    private async Task SorgulaAsync()
+    {
+        _processing = true;
+        saleList = await _saleRepo.GetAllSalesAsync(_saleViewModel);
+        _processing = false;
+    }
+
+    private async Task AddNewSaleDialog()
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true };
+        var dialog = _dialogService.Show<CreateUpdateSale>("Yeni Satış Oluştur.", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            saleList = await _saleRepo.GetAllSalesAsync(_saleViewModel);
+            this.StateHasChanged();
+        }
+    }
+
+    public async void UpdateSale(Sale sale)
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("UUID", sale.EFatura_UUID);
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true };
+        var dialog = _dialogService.Show<CreateUpdateSale>("Satış Güncelle.", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            saleList = await _saleRepo.GetAllSalesAsync(_saleViewModel);
+            this.StateHasChanged();
+        }
+    }
+
+
+    private async Task Delete(Sale sale)
+    {
+        string deleteContent = "Kaydı silmek istediğinize emin misiniz ?";
+
+        var parameters = new DialogParameters();
+        parameters.Add("HeaderIcon", Icons.Material.Outlined.Error);
+        parameters.Add("ConfirmationMessage", deleteContent);
+        parameters.Add("HeaderConfirmationMessage", "Silme Onayı");
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true };
+        var dialog = _dialogService.Show<Shared.ConfirmationDialog>("Sil", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            var response = await _saleRepo.DeleteSaleAsync(sale.EFatura_UUID);
+            if (response)
+            {
+                _snackBar.Add("İşlem Başarılı", Severity.Success);
+                saleList = await _saleRepo.GetAllSalesAsync(_saleViewModel);
+                this.StateHasChanged();
+            }
+            else
+            {
+                _snackBar.Add("Bir hata oluştu.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteAllTable()
+    {
+        if (saleList.Any())
+        {
+            string deleteContent = "Tüm verileri silmek istediğinize emin misiniz ?";
+            var parameters = new DialogParameters();
+            parameters.Add("HeaderIcon", Icons.Material.Outlined.Error);
+            parameters.Add("ConfirmationMessage", deleteContent);
+            parameters.Add("HeaderConfirmationMessage", "Silme Onayı");
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true, DisableBackdropClick = true };
+            var dialog = _dialogService.Show<Shared.ConfirmationDialog>("Sil", parameters, options);
+            var result = await dialog.Result;
+            if (!result.Canceled)
+            {
+                var response = await _saleRepo.DeleteAllSaleAsync();
+                if (response)
+                {
+                    _snackBar.Add("İşlem Başarılı", Severity.Success);
+                    await OnInitializedAsync();
+                    this.StateHasChanged();
+                }
+                else
+                {
+                    _snackBar.Add("Bir hata oluştu.", Severity.Error);
+                }
+            }
+        }
+        else
+        {
+            _snackBar.Add("Silinecek bir öğe bulunamadı.", Severity.Info);
+        }
+
+    }
+
+    private void Cancel()
+    {
+        _navigation.NavigateTo("/");
+    }
+
+}
